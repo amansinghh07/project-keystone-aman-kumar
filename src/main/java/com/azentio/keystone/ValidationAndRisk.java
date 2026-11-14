@@ -40,7 +40,8 @@ class RiskEngine {
              @Value("${keystone.risk.beneficial-owner-threshold}") int beneficialOwnerThreshold) {
     this.high=Set.copyOf(high); this.medium=Set.copyOf(medium); this.beneficialOwnerThreshold=beneficialOwnerThreshold;
   }
-  Assessment assess(ApplicationRequest r) {
+  Assessment assess(ApplicationRequest r) { return assess(r,List.of()); }
+  Assessment assess(ApplicationRequest r, List<FactorView> linkedFactors) {
     List<FactorView> f = new ArrayList<>(); String industry=r.industryCode().toUpperCase(Locale.ROOT);
     if(high.contains(industry)) add(f,"HIGH_RISK_INDUSTRY",40,"Industry is in the configured high-risk list");
     if(medium.contains(industry)) add(f,"MEDIUM_RISK_INDUSTRY",20,"Industry is in the configured medium-risk list");
@@ -50,7 +51,7 @@ class RiskEngine {
     if(r.relatedParties().stream().anyMatch(p->!"IN".equalsIgnoreCase(p.nationality()))) add(f,"FOREIGN_RELATED_PARTY",15,"At least one related party is not Indian");
     if(r.entityType()!=EntityType.SOLE_PROPRIETORSHIP && r.relatedParties().stream().noneMatch(p->p.ownershipPercent().compareTo(BigDecimal.valueOf(beneficialOwnerThreshold))>=0)) add(f,"OPAQUE_OWNERSHIP",20,"No party meets the beneficial-owner threshold");
     if(r.expectedMonthlyTurnover().compareTo(BigDecimal.valueOf(50_000_000))>0) add(f,"HIGH_TURNOVER",10,"Expected monthly turnover exceeds 50,000,000");
-    int score=f.stream().mapToInt(FactorView::points).sum(); RiskTier tier=pep||score>=60?RiskTier.HIGH:score>=30?RiskTier.MEDIUM:RiskTier.LOW;
+    f.addAll(linkedFactors); int score=f.stream().mapToInt(FactorView::points).sum(); RiskTier tier=pep||score>=60?RiskTier.HIGH:score>=30?RiskTier.MEDIUM:RiskTier.LOW;
     return new Assessment(score,tier,f);
   }
   private void add(List<FactorView> f,String c,int p,String r){f.add(new FactorView(c,p,r));}

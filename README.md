@@ -45,6 +45,14 @@ curl.exe -u rm1:password -X POST http://localhost:8080/api/onboarding -H "Conten
 
 `docker-compose.yml` starts the production system-of-record dependencies. The default tests deliberately use H2 and no Docker, so `mvn test` is clean-container safe.
 
+To use the PostgreSQL profile locally:
+
+```powershell
+docker compose up -d postgres redis
+$env:SPRING_PROFILES_ACTIVE = "docker"
+mvn spring-boot:run
+```
+
 ## Risk-factor table
 
 | Factor | Points |

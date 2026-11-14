@@ -9,6 +9,7 @@ spring:
   h2.console.enabled: true
 server.error.include-message: never
 keystone:
+  identifier-hmac-secret: ${IDENTIFIER_HMAC_SECRET:development-only-change-me}
   risk:
     high-industries: JEWELLERY,BULLION,MONEY_SERVICES,CRYPTO_ASSETS,REAL_ESTATE_BROKER
     medium-industries: USED_VEHICLES,TRAVEL_AGENCY,CONSTRUCTION

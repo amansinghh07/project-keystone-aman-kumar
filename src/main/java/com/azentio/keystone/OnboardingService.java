@@ -9,8 +9,8 @@ import java.util.*;
 
 @Service
 class OnboardingService {
-  private final ApplicationRepository repo; private final ApplicationValidator validator; private final RiskEngine risk; private final Clock clock;
-  OnboardingService(ApplicationRepository repo, ApplicationValidator validator, RiskEngine risk) { this.repo=repo; this.validator=validator; this.risk=risk; this.clock=Clock.systemUTC(); }
+  private final ApplicationRepository repo; private final ApplicationValidator validator; private final RiskEngine risk; private final IdentifierIndex identifiers; private final Clock clock;
+  OnboardingService(ApplicationRepository repo, ApplicationValidator validator, RiskEngine risk, IdentifierIndex identifiers) { this.repo=repo; this.validator=validator; this.risk=risk; this.identifiers=identifiers; this.clock=Clock.systemUTC(); }
   @Transactional Long create(ApplicationRequest request, String actor) {
     OnboardingApplication a=new OnboardingApplication(); a.owner=actor; replace(a,request); repo.save(a); return a.id;
   }
@@ -22,10 +22,10 @@ class OnboardingService {
     validateNote(from,request);
     if(request.action()==WorkflowAction.SUBMIT || request.action()==WorkflowAction.RESUBMIT) {
       ApplicationRequest current=toRequest(a); List<FieldErrorView> errors=validator.validate(current); if(!errors.isEmpty()) throw new ValidationException(errors);
-      RiskEngine.Assessment assessment=risk.assess(current); a.riskScore=assessment.score(); a.riskTier=assessment.tier(); a.factors.clear(); assessment.factors().forEach(v->{RiskFactor f=new RiskFactor();f.application=a;f.code=v.code();f.points=v.points();f.reason=v.reason();a.factors.add(f);});
+      RiskEngine.Assessment assessment=risk.assess(current, identifiers.evaluateAndIndex(a.id,current)); a.riskScore=assessment.score(); a.riskTier=assessment.tier(); a.factors.clear(); assessment.factors().forEach(v->{RiskFactor f=new RiskFactor();f.application=a;f.code=v.code();f.points=v.points();f.reason=v.reason();a.factors.add(f);});
       to=assessment.tier()==RiskTier.HIGH?Status.PENDING_EDD:Status.PENDING_OPS_REVIEW; a.submittedAt=Instant.now(clock);
     }
-    a.status=to; event(a,actor,request.action(),from,to,request.note());
+    a.status=to; if(to==Status.REJECTED||to==Status.WITHDRAWN) identifiers.remove(a.id); event(a,actor,request.action(),from,to,request.note());
   }
   @Transactional ApplicationView get(long id,String actor,Set<String> roles){ OnboardingApplication a=find(id); requireOwnerIfRm(a,actor,roles); return view(a,roles); }
   Page<ApplicationView> list(Status status,RiskTier tier,int page,int size,String actor,Set<String> roles) {
