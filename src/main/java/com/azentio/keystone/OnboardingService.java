@@ -25,13 +25,24 @@ class OnboardingService {
       RiskEngine.Assessment assessment=risk.assess(current, identifiers.evaluateAndIndex(a.id,current)); a.riskScore=assessment.score(); a.riskTier=assessment.tier(); a.factors.clear(); assessment.factors().forEach(v->{RiskFactor f=new RiskFactor();f.application=a;f.code=v.code();f.points=v.points();f.reason=v.reason();a.factors.add(f);});
       to=assessment.tier()==RiskTier.HIGH?Status.PENDING_EDD:Status.PENDING_OPS_REVIEW; a.submittedAt=Instant.now(clock);
     }
-    a.status=to; if(to==Status.REJECTED||to==Status.WITHDRAWN) identifiers.remove(a.id); event(a,actor,request.action(),from,to,request.note());
+    a.status=to; if(to==Status.REJECTED||to==Status.WITHDRAWN) identifiers.remove(a.id,toRequest(a)); event(a,actor,request.action(),from,to,request.note());
   }
   @Transactional ApplicationView get(long id,String actor,Set<String> roles){ OnboardingApplication a=find(id); requireOwnerIfRm(a,actor,roles); return view(a,roles); }
   Page<ApplicationView> list(Status status,RiskTier tier,int page,int size,String actor,Set<String> roles) {
     Pageable p=PageRequest.of(page,size,Sort.by("submittedAt").ascending()); Page<OnboardingApplication> result;
     if(roles.contains("RM")) result=status==null?repo.findByOwner(actor,p):repo.findByOwnerAndStatus(actor,status,p); else if(status!=null && tier!=null) result=repo.findByStatusAndRiskTier(status,tier,p); else if(status!=null) result=repo.findByStatus(status,p); else result=repo.findAll(p);
     return result.map(a->view(a,roles));
+  }
+  @Transactional ApplicationLinkView[] links(long id, String actor, Set<String> roles) {
+    if (!roles.contains("OPS") && !roles.contains("COMPLIANCE")) throw new AccessDeniedException("Only OPS or Compliance may view cross-application links");
+    OnboardingApplication subject=find(id); Map<String,Set<Long>> matches=identifiers.linkedApplicationIds(id,toRequest(subject));
+    Map<Long,Set<String>> byId=new TreeMap<>(); matches.forEach((type, ids)->ids.forEach(otherId->byId.computeIfAbsent(otherId,x->new TreeSet<>()).add(type)));
+    return byId.entrySet().stream().map(e->repo.findById(e.getKey()).map(a->new ApplicationLinkView(a.id,a.status,a.riskTier,e.getValue(),a.submittedAt)).orElse(null)).filter(Objects::nonNull).toArray(ApplicationLinkView[]::new);
+  }
+  @Transactional ReindexResult reindex(int days, Set<String> roles) {
+    if (!roles.contains("COMPLIANCE")) throw new AccessDeniedException("Only Compliance may reindex identifiers");
+    Instant since=Instant.now(clock).minus(Duration.ofDays(days)); List<OnboardingApplication> applications=repo.findBySubmittedAtAfterAndStatusNotIn(since,List.of(Status.REJECTED,Status.WITHDRAWN));
+    applications.forEach(a->identifiers.evaluateAndIndex(a.id,toRequest(a))); return new ReindexResult(applications.size(),days);
   }
   private OnboardingApplication owned(long id,String actor){return repo.findByIdAndOwner(id,actor).orElseThrow(()->new DomainException(403,"NOT_OWNER","RM may only access applications they created"));}
   private OnboardingApplication find(long id){return repo.findById(id).orElseThrow(()->new DomainException(404,"NOT_FOUND","Application not found"));}

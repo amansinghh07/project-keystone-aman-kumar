@@ -16,6 +16,8 @@ class OnboardingController {
   @PostMapping("/{id}/actions") @ResponseStatus(HttpStatus.NO_CONTENT) void act(@PathVariable long id,@Valid @RequestBody ActionRequest r,Authentication a){service.act(id,r,a.getName(),roles(a));}
   @GetMapping("/{id}") ApplicationView get(@PathVariable long id,Authentication a){return service.get(id,a.getName(),roles(a));}
   @GetMapping Page<ApplicationView> list(@RequestParam(required=false) Status status,@RequestParam(required=false) RiskTier tier,@RequestParam(defaultValue="0") int page,@RequestParam(defaultValue="20") int size,Authentication a){return service.list(status,tier,page,Math.min(size,100),a.getName(),roles(a));}
+  @GetMapping("/{id}/links") ApplicationLinkView[] links(@PathVariable long id, Authentication a){return service.links(id,a.getName(),roles(a));}
+  @PostMapping("/admin/identifier-index/reindex") ReindexResult reindex(@RequestParam(defaultValue="90") @jakarta.validation.constraints.Min(1) @jakarta.validation.constraints.Max(365) int days, Authentication a){return service.reindex(days,roles(a));}
   private Set<String> roles(Authentication a){return a.getAuthorities().stream().map(x->x.getAuthority().replace("ROLE_","")).collect(java.util.stream.Collectors.toSet());}
 }
 
