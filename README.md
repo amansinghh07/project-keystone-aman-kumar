@@ -10,6 +10,7 @@ An explainable onboarding-risk service for Indian business current accounts. It 
 - V1-V5 business validation, explainable factor-level risk scoring and PEP HIGH override.
 - RM ownership controls, state-transition authorization, server-side note rules, API error contracts, and an append-only event entity.
 - PAN and mobile masking in application responses. Values are intentionally never written to application logs.
+- Cross-application link factors for duplicate entity PAN, signatory spread, shared mobile and address clusters. The `IdentifierIndex` boundary uses HMAC-SHA256 keys so raw PAN, mobile and addresses are never used as index keys; its synchronized in-memory adapter makes the submit read/write sequence atomic for unit tests.
 - A migration-defined composite index `(status, risk_tier, submitted_at)`: equality filters precede the ascending queue sort, allowing PostgreSQL to narrow the range before walking it in queue order.
 
 ## Architecture
@@ -80,4 +81,4 @@ Tier thresholds: `<30 LOW`, `30-59 MEDIUM`, `>=60 HIGH`.
 
 ## Next steps
 
-The next production increment is the Redis-backed, HMAC-keyed cross-application identifier index and React review queue. I would use a Lua script to atomically query + insert the sorted-set members, so concurrent submissions cannot miss duplicate identities, and keep it behind an `IdentifierIndex` interface with a deterministic in-memory test implementation. I would then add the React UI with the API's `allowedActions` as the only action authority.
+The remaining production increment is a Redis sorted-set adapter and React review queue. The in-memory index is intentionally only the offline-test adapter. The Redis adapter should use a Lua script to atomically query + insert keyed sorted-set members, with timestamps and configurable 30/90-day trimming, so concurrent submissions cannot miss duplicate identities. The UI should use the API's `allowedActions` as the only action authority.

@@ -15,4 +15,4 @@ I chose a deliberately narrow, working Task 1 rather than presenting untested Re
 
 ## Known limitations
 
-The assignment is intentionally larger than a two-hour implementation. Redis link analysis and the React review UI are described as the next increments, not claimed as implemented. The default test profile uses H2 in PostgreSQL compatibility mode to keep `mvn test` independent of Docker. Production would use PostgreSQL and the supplied Flyway migration.
+The assignment is intentionally larger than a two-hour implementation. A tested in-memory, HMAC-keyed cross-application identifier index is included; the production Redis sorted-set adapter and React review UI remain next increments and are not claimed as implemented. The default test profile uses H2 in PostgreSQL compatibility mode to keep `mvn test` independent of Docker. Production would use PostgreSQL and the supplied Flyway migration.
