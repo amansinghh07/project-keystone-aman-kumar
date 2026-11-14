@@ -30,7 +30,7 @@ class OnboardingService {
   @Transactional ApplicationView get(long id,String actor,Set<String> roles){ OnboardingApplication a=find(id); requireOwnerIfRm(a,actor,roles); return view(a,roles); }
   Page<ApplicationView> list(Status status,RiskTier tier,int page,int size,String actor,Set<String> roles) {
     Pageable p=PageRequest.of(page,size,Sort.by("submittedAt").ascending()); Page<OnboardingApplication> result;
-    if(roles.contains("RM")) result=repo.findByOwnerAndStatus(actor,status==null?Status.DRAFT:status,p); else if(status!=null && tier!=null) result=repo.findByStatusAndRiskTier(status,tier,p); else if(status!=null) result=repo.findByStatus(status,p); else result=repo.findAll(p);
+    if(roles.contains("RM")) result=status==null?repo.findByOwner(actor,p):repo.findByOwnerAndStatus(actor,status,p); else if(status!=null && tier!=null) result=repo.findByStatusAndRiskTier(status,tier,p); else if(status!=null) result=repo.findByStatus(status,p); else result=repo.findAll(p);
     return result.map(a->view(a,roles));
   }
   private OnboardingApplication owned(long id,String actor){return repo.findByIdAndOwner(id,actor).orElseThrow(()->new DomainException(403,"NOT_OWNER","RM may only access applications they created"));}
