@@ -3,6 +3,7 @@ package com.azentio.keystone;
 import org.junit.jupiter.api.Test;
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.concurrent.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 class IdentifierIndexTest {
@@ -17,5 +18,10 @@ class IdentifierIndexTest {
     assertTrue(index.evaluateAndIndex(2,request("ABCDE1234F","9876543211")).stream().anyMatch(f->f.reason().contains("1 other")));
   }
   @Test void addressNormalisationIsStable(){assertEquals("12 main st pune 411001",InMemoryIdentifierIndex.normaliseAddress("12, Main St. PUNE | 411001"));}
+  @Test void concurrentDuplicateChecksDoNotMissRacingSubmissions() throws Exception {
+    IdentifierIndex index=new InMemoryIdentifierIndex("test-secret"); ExecutorService pool=Executors.newFixedThreadPool(8);
+    List<Future<Boolean>> results=new java.util.ArrayList<>(); for(long id=1;id<=20;id++){final long applicationId=id;results.add(pool.submit(()->index.evaluateAndIndex(applicationId,request("ABCDE1234F","987654321"+(applicationId%10))).stream().anyMatch(f->f.code().equals("DUPLICATE_ENTITY_PAN"))));}
+    int detected=0;for(Future<Boolean> result:results)if(result.get())detected++;pool.shutdown();assertTrue(detected>=19);
+  }
   private ApplicationRequest request(String pan,String mobile){return new ApplicationRequest(EntityType.SOLE_PROPRIETORSHIP,"Acme",pan,null,new AddressRequest("1 Main St","Pune","411001"),"OTHER",BigDecimal.valueOf(100),BigDecimal.TEN,List.of(new PartyRequest("Aman",pan,mobile,PartyRole.PROPRIETOR,BigDecimal.valueOf(100),true,false,"IN")));}
 }
