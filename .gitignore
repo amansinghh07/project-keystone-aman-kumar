@@ -3,3 +3,5 @@ target/
 *.iml
 .env
 node_modules/
+ui/dist/
+ui/build-output/
