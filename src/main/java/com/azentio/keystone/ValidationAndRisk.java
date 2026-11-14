@@ -36,7 +36,7 @@ class ApplicationValidator {
 @Component
 class RiskEngine {
   private final Set<String> high; private final Set<String> medium; private final int beneficialOwnerThreshold;
-  RiskEngine(@Value("${keystone.risk.high-industries}") List<String> high, @Value("${keystone.risk.medium-industries}") List<String> medium,
+  RiskEngine(@Value("#{'${keystone.risk.high-industries}'.split(',')}") List<String> high, @Value("#{'${keystone.risk.medium-industries}'.split(',')}") List<String> medium,
              @Value("${keystone.risk.beneficial-owner-threshold}") int beneficialOwnerThreshold) {
     this.high=Set.copyOf(high); this.medium=Set.copyOf(medium); this.beneficialOwnerThreshold=beneficialOwnerThreshold;
   }

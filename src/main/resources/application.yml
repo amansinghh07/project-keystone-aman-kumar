@@ -10,6 +10,6 @@ spring:
 server.error.include-message: never
 keystone:
   risk:
-    high-industries: [JEWELLERY, BULLION, MONEY_SERVICES, CRYPTO_ASSETS, REAL_ESTATE_BROKER]
-    medium-industries: [USED_VEHICLES, TRAVEL_AGENCY, CONSTRUCTION]
+    high-industries: JEWELLERY,BULLION,MONEY_SERVICES,CRYPTO_ASSETS,REAL_ESTATE_BROKER
+    medium-industries: USED_VEHICLES,TRAVEL_AGENCY,CONSTRUCTION
     beneficial-owner-threshold: 10
