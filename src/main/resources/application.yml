@@ -1,0 +1,15 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:keystone;MODE=PostgreSQL;DB_CLOSE_DELAY=-1
+    username: sa
+    password: ''
+  jpa:
+    hibernate.ddl-auto: update
+    open-in-view: false
+  h2.console.enabled: true
+server.error.include-message: never
+keystone:
+  risk:
+    high-industries: [JEWELLERY, BULLION, MONEY_SERVICES, CRYPTO_ASSETS, REAL_ESTATE_BROKER]
+    medium-industries: [USED_VEHICLES, TRAVEL_AGENCY, CONSTRUCTION]
+    beneficial-owner-threshold: 10
