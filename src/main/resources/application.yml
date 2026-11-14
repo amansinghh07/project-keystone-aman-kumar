@@ -10,6 +10,7 @@ spring:
 server.error.include-message: never
 keystone:
   identifier-hmac-secret: ${IDENTIFIER_HMAC_SECRET:development-only-change-me}
+  identifier-window-days: ${IDENTIFIER_WINDOW_DAYS:90}
   risk:
     high-industries: JEWELLERY,BULLION,MONEY_SERVICES,CRYPTO_ASSETS,REAL_ESTATE_BROKER
     medium-industries: USED_VEHICLES,TRAVEL_AGENCY,CONSTRUCTION

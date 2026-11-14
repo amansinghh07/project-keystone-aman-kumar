@@ -10,7 +10,7 @@ An explainable onboarding-risk service for Indian business current accounts. It 
 - V1-V5 business validation, explainable factor-level risk scoring and PEP HIGH override.
 - RM ownership controls, state-transition authorization, server-side note rules, API error contracts, and an append-only event entity.
 - PAN and mobile masking in application responses. Values are intentionally never written to application logs.
-- Cross-application link factors for duplicate entity PAN, signatory spread, shared mobile and address clusters. The `IdentifierIndex` boundary uses HMAC-SHA256 keys so raw PAN, mobile and addresses are never used as index keys; its synchronized in-memory adapter makes the submit read/write sequence atomic for unit tests.
+- Cross-application link factors for duplicate entity PAN, signatory spread, shared mobile and address clusters. The Docker profile uses Redis sorted sets whose members are application ids and scores are timestamps. A Lua script trims the rolling window, queries matches and indexes the application atomically; HMAC-SHA256 means raw PAN, mobile and addresses are never Redis keys. The default profile retains an equivalent synchronized in-memory adapter for fast tests.
 - A migration-defined composite index `(status, risk_tier, submitted_at)`: equality filters precede the ascending queue sort, allowing PostgreSQL to narrow the range before walking it in queue order.
 
 ## Architecture
@@ -36,6 +36,16 @@ Prerequisite: Java 21+ and Maven 3.9+.
 ```powershell
 mvn test
 mvn spring-boot:run
+```
+
+### Cross-application links and reindexing
+
+`GET /api/onboarding/{id}/links` is available to OPS and Compliance. It returns only application id, status, tier, submission time, and the identifier category (`ENTITY_PAN`, `PARTY_PAN`, `MOBILE`, or `ADDRESS`) that linked it - never the sensitive value.
+
+Compliance can rebuild the rolling Redis index after a deployment or key expiry:
+
+```powershell
+curl.exe -u compliance1:password -X POST "http://localhost:8080/api/onboarding/admin/identifier-index/reindex?days=90"
 ```
 
 ### Review UI
@@ -89,6 +99,6 @@ Tier thresholds: `<30 LOW`, `30-59 MEDIUM`, `>=60 HIGH`.
 | APPROVE, REJECT | OPS / OPS review; Compliance / OPS review or EDD | terminal |
 | WITHDRAW | RM owner / DRAFT, PENDING_INFO, OPS review | WITHDRAWN |
 
-## Next steps
+## Design notes
 
-The remaining production increment is a Redis sorted-set adapter and React review queue. The in-memory index is intentionally only the offline-test adapter. The Redis adapter should use a Lua script to atomically query + insert keyed sorted-set members, with timestamps and configurable 30/90-day trimming, so concurrent submissions cannot miss duplicate identities. The UI should use the API's `allowedActions` as the only action authority.
+The identifier window is configurable through `IDENTIFIER_WINDOW_DAYS` (default 90). Redis records use a TTL one day longer than the window as a safety net; each atomic submission also trims old sorted-set members. The UI uses the API's `allowedActions` as its only action authority.

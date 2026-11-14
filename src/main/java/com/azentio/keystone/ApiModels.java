@@ -5,6 +5,7 @@ import jakarta.validation.constraints.*;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
+import java.util.Set;
 
 record AddressRequest(@NotBlank String line1, @NotBlank String city, @Pattern(regexp="\\d{6}") String pincode) {}
 record PartyRequest(@NotBlank String name, @NotBlank String pan, @NotBlank String mobile, @NotNull PartyRole role,
@@ -22,5 +23,7 @@ record ApplicationView(Long id, EntityType entityType, String legalName, String 
                        String industryCode, BigDecimal expectedMonthlyTurnover, BigDecimal expectedMonthlyCashDeposit,
                        Status status, Integer score, RiskTier tier, List<FactorView> factors, List<PartyView> relatedParties,
                        List<EventView> timeline, List<WorkflowAction> allowedActions, Instant submittedAt) {}
+record ApplicationLinkView(Long applicationId, Status status, RiskTier tier, Set<String> matchedOn, Instant submittedAt) {}
+record ReindexResult(int indexedApplications, int windowDays) {}
 record ErrorResponse(String code, String message, List<FieldErrorView> fieldErrors) {}
 record FieldErrorView(String field, String code) {}

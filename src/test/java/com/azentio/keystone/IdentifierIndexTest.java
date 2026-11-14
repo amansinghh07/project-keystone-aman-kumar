@@ -3,6 +3,8 @@ package com.azentio.keystone;
 import org.junit.jupiter.api.Test;
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.*;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -10,12 +12,17 @@ class IdentifierIndexTest {
   @Test void secondEntityWithSamePanGetsDuplicateFactorAndRemovalStopsIt() {
     IdentifierIndex index=new InMemoryIdentifierIndex("test-secret"); index.evaluateAndIndex(1,request("ABCDE1234F","9876543210"));
     assertTrue(index.evaluateAndIndex(2,request("ABCDE1234F","9876543211")).stream().anyMatch(f->f.code().equals("DUPLICATE_ENTITY_PAN")));
-    index.remove(1); index.remove(2);
+    index.remove(1,request("ABCDE1234F","9876543210")); index.remove(2,request("ABCDE1234F","9876543211"));
     assertFalse(index.evaluateAndIndex(3,request("ABCDE1234F","9876543212")).stream().anyMatch(f->f.code().equals("DUPLICATE_ENTITY_PAN")));
   }
   @Test void resubmissionDoesNotCountTheSameApplicationTwice() {
     IdentifierIndex index=new InMemoryIdentifierIndex("test-secret"); index.evaluateAndIndex(1,request("ABCDE1234F","9876543210")); index.evaluateAndIndex(1,request("ABCDE1234F","9876543210"));
     assertTrue(index.evaluateAndIndex(2,request("ABCDE1234F","9876543211")).stream().anyMatch(f->f.reason().contains("1 other")));
+  }
+  @Test void linkedIdsAreReturnedByIdentifierTypeWithoutRawValues() {
+    IdentifierIndex index=new InMemoryIdentifierIndex("test-secret"); index.evaluateAndIndex(1,request("ABCDE1234F","9876543210"));
+    Map<String,Set<Long>> links=index.linkedApplicationIds(2,request("ABCDE1234F","9876543211"));
+    assertEquals(Set.of(1L),links.get("ENTITY_PAN")); assertFalse(links.toString().contains("ABCDE1234F"));
   }
   @Test void addressNormalisationIsStable(){assertEquals("12 main st pune 411001",InMemoryIdentifierIndex.normaliseAddress("12, Main St. PUNE | 411001"));}
   @Test void concurrentDuplicateChecksDoNotMissRacingSubmissions() throws Exception {
