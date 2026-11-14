@@ -38,6 +38,16 @@ mvn test
 mvn spring-boot:run
 ```
 
+### Review UI
+
+```powershell
+cd ui
+npm install
+npm run dev
+```
+
+The React + TypeScript UI provides a role-login field, queue filters, coloured risk badges, waiting time, a detail view with risk factors and audit timeline, and action buttons rendered only from `allowedActions` returned by the API. Set `VITE_API_URL` when the API is not on `http://localhost:8080`.
+
 Example create call (as `rm1`):
 
 ```powershell
