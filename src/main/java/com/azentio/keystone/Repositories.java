@@ -9,5 +9,6 @@ interface ApplicationRepository extends JpaRepository<OnboardingApplication, Lon
   Optional<OnboardingApplication> findByIdAndOwner(Long id, String owner);
   Page<OnboardingApplication> findByStatusAndRiskTier(Status status, RiskTier tier, Pageable pageable);
   Page<OnboardingApplication> findByStatus(Status status, Pageable pageable);
+  Page<OnboardingApplication> findByOwner(String owner, Pageable pageable);
   Page<OnboardingApplication> findByOwnerAndStatus(String owner, Status status, Pageable pageable);
 }
